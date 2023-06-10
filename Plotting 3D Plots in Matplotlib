@@ -56,6 +56,48 @@ ax.set_title('3D Surface Plot')
 # Show the plot
 plt.show()
 # __________________________END OF CODE_______________________
+# _______________________________________________EXAMPLE 2__________________________________________
+import numpy as np
+import matplotlib.pyplot as plt
+import base64
 
+from io import BytesIO
+
+np.random.seed(42)
+
+xs = np.random.random(100) * 10 + 20
+ys = np.random.random(100) * 5 + 7
+zs = np.random.random(100) * 15 + 50
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(xs, ys, zs)
+
+# Encode the figure
+temp = BytesIO()
+fig.savefig(temp, format="png")
+fig_encode_bs64 = base64.b64encode(temp.getvalue()).decode('utf-8')
+
+# HTML string with added CSS style for black background
+html_string = """
+<html>
+<head>
+<style>
+    body {{
+        background-color: black;
+        color: white;
+    }}
+</style>
+</head>
+<body>
+    <h2>This is a test HTML</h2>
+    <img src="data:image/png;base64,{}"/>
+</body>
+</html>
+""".format(fig_encode_bs64)
+
+with open("test.html", "w") as f:
+    f.write(html_string)
+# _________________________________________________END OF EXAMPLE 2_____________________________________
 
 
