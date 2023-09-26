@@ -59,7 +59,7 @@ plt.scatter(predicting_time, amount, color='black', marker='o', label='Intersect
 # zorder=5 - marker is drawn on top of other elements in the plot
 
 # Add a label indicating the predicted value at the intersection point
-plt.text(predicting_time + 0.1, amount, f'{amount:.2f}', color='purple', fontsize=12, ha='left', va='bottom')
+plt.text(predicting_time + 0.1, amount, f'{amount:.2f}', color='purple', fontsize=12, ha='left', va='bottom')  # or '%0.2f'%amount
 
 plt.title(f"PREDICTED AMOUNT SPENT AT {predicting_time} MINUTES FROM\nSHOPPING HABITS OF 100 CUSTOMERS")
 plt.xlabel("Minutes before purchase")
