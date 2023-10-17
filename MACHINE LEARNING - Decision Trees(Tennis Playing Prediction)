@@ -47,11 +47,24 @@ clf = clf.fit(X, y)
 # graph.render("tennis_decision_tree")
 
 # Predict whether tennis can be played for new conditions
-new_conditions = [[1,2, 1, 1]]  # Example: Outlook(0,1,2), Temperature(0,1,2), Humidity(0,1), Wind(0,1)
+outlook_choice = int(input('Enter Outlook(0,1,2): '))
+temperature_choice = int(input('Temperature(0,1,2): '))
+humidity_choice = int(input('Humidity(0,1): '))
+wind_choice = int(input('Wind(0,1): '))
+
+new_conditions = [[outlook_choice,temperature_choice, humidity_choice, wind_choice]]  # Example: Outlook(0,1,2), Temperature(0,1,2), Humidity(0,1), Wind(0,1)
 prediction = clf.predict(new_conditions)
 if prediction == 0:
-    print("Tennis cannot be played.")
+    print(f"""
+_______________________
+Tennis cannot be played.
+_______________________
+""")
 else:
-    print("Tennis can be played.")
+    print(f"""
+_______________________
+Tennis can be played.
+_______________________
+""")
 
 
