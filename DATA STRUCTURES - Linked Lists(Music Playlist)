@@ -2,6 +2,12 @@ import os
 
 
 # ____________________________________PLAYLIST WITH LINKED LISTS_________________________________
+"""
+For advanced project consider using pydub, tkinter and other needed libraries with below considerations:
+         - GUI where a user sees what song is playing
+         - The user can choose to play another song still within the loop
+         - The loop continues until the user chooses to close the playlist
+"""
 
 class Song:
     def __init__(self, title, artist, file_path, next_song=None):
@@ -42,7 +48,7 @@ if __name__ == '__main__':
     playlist = Playlist()
 
     # Specify the directory where your music files are stored (modify accordingly)
-    music_directory = r"C:\Users\user\conda_projects\linked_list_music_playlist"  # update with your music folder directory
+    music_directory = r"C:\Users\user\conda_projects\linked_list_music_playlist"
 
     # Get a list of music files with mp3 and m4a extensions
     music_files = [os.path.join(music_directory, file) for file in os.listdir(music_directory)
