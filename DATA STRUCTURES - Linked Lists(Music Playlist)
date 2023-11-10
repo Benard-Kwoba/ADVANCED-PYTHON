@@ -1,0 +1,60 @@
+import os
+
+
+# ____________________________________PLAYLIST WITH LINKED LISTS_________________________________
+
+class Song:
+    def __init__(self, title, artist, file_path, next_song=None):
+        # Each Song object has a title, artist, file path, and a reference to the next song in the playlist
+        self.title = title
+        self.artist = artist
+        self.file_path = file_path
+        self.next_song = next_song
+
+
+class Playlist:
+    def __init__(self):
+        # The Playlist class has a head attribute, which represents the first song in the playlist
+        self.head = None
+
+    def add_song(self, song_title, song_artist, song_file_path):
+        # Method to add a new song to the playlist
+        new_song = Song(song_title, song_artist, song_file_path)
+        # Set the next_song attribute of the new song to the current head of the playlist
+        new_song.next_song = self.head
+        # Update the head of the playlist to be the new song
+        self.head = new_song
+
+    def play_all_songs(self):
+        # Method to play all songs in the playlist
+        current_song = self.head
+        while current_song:
+            # Print information about the current song
+            print(f"Now playing {current_song.title} by {current_song.artist}")
+            # Use the os.system() function to play the song
+            os.system(f'start "" "{current_song.file_path}"')  # Use double quotes for file paths with spaces
+            # Move to the next song in the playlist
+            current_song = current_song.next_song
+
+
+if __name__ == '__main__':
+    # Create a playlist
+    playlist = Playlist()
+
+    # Specify the directory where your music files are stored (modify accordingly)
+    music_directory = r"C:\Users\user\conda_projects\linked_list_music_playlist"
+
+    # Get a list of music files with mp3 and m4a extensions
+    music_files = [os.path.join(music_directory, file) for file in os.listdir(music_directory)
+                   if file.lower().endswith((".mp3", ".m4a"))]
+
+    # Add songs to the playlist from the selected music files
+    for path in music_files:
+        # Extract title and artist information from the filename (modify accordingly)
+        filename = os.path.splitext(os.path.basename(path))[0]
+        if '-' in filename:
+            path_artist, path_title = filename.split('-', 1)
+            playlist.add_song(path_title.strip(), path_artist.strip(), path)
+
+    # Play all songs in the playlist
+    playlist.play_all_songs()
