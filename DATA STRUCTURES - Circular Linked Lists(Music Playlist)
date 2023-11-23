@@ -6,7 +6,6 @@ For advanced project consider using pydub, tkinter and other needed libraries wi
          - The user can choose to play another song still within the loop
          - The loop continues until the user chooses to close the playlist
 """
-
 class Song:
     def __init__(self, title, artist, file_path, next_song=None):
         # Each Song object has a title, artist, file path, and a reference to the next song in the playlist
@@ -14,7 +13,6 @@ class Song:
         self.artist = artist
         self.file_path = file_path
         self.next_song = next_song
-
 
 class Playlist:
     def __init__(self):
@@ -26,9 +24,11 @@ class Playlist:
         new_song = Song(song_title, song_artist, song_file_path)
 
         if not self.head:
+            # If the playlist is empty, set the new song as the head and make it circular
             self.head = new_song
             self.head.next_song = self.head
         else:
+            # Otherwise, add the new song to the end of the playlist and update the circular reference
             current_song = self.head
             while current_song.next_song != self.head:
                 current_song = current_song.next_song
@@ -43,18 +43,9 @@ class Playlist:
         current_song = self.head
         while True:
             print(f"Now playing {current_song.title} by {current_song.artist}")
-
-            # Display the name of the next song
-            next_song_name = current_song.next_song.title
-            next_song_artist = current_song.next_song.artist
-            print(f"Press Enter to play the next song: {next_song_name} by {next_song_artist}")
-
-            # open the file specified by current_song.file_path using the default program associated with its file type
-            # start "": Windows-specific command that opens a file with its associated program. 
             os.system(f'start "" "{current_song.file_path}"')
-            input()  # Wait for user input to play the next song
+            input(f"Press Enter to play the next song: {current_song.next_song.title} by {current_song.next_song.artist}")
             current_song = current_song.next_song
-
 
 if __name__ == '__main__':
     playlist = Playlist()
@@ -72,3 +63,4 @@ if __name__ == '__main__':
             playlist.add_song(path_title.strip(), path_artist.strip(), path)
 
     playlist.play_all_songs()
+
