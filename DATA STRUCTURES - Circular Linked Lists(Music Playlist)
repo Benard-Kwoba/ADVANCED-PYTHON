@@ -49,6 +49,8 @@ class Playlist:
             next_song_artist = current_song.next_song.artist
             print(f"Press Enter to play the next song: {next_song_name} by {next_song_artist}")
 
+            # open the file specified by current_song.file_path using the default program associated with its file type
+            # start "": Windows-specific command that opens a file with its associated program. 
             os.system(f'start "" "{current_song.file_path}"')
             input()  # Wait for user input to play the next song
             current_song = current_song.next_song
