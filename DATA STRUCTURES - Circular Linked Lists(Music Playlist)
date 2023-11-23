@@ -42,9 +42,10 @@ class Playlist:
 
         current_song = self.head
         while True:
-            print(f"Now playing {current_song.title} by {current_song.artist}")
+            print(f"Now playing \033[4m{current_song.title}\033[0m by {current_song.artist}")
             os.system(f'start "" "{current_song.file_path}"')
-            input(f"Press Enter to play the next song: {current_song.next_song.title} by {current_song.next_song.artist}")
+            input(f"\t---- Press Enter to play the next song: "
+                  f"\033[4m{current_song.next_song.title}\033[0m by {current_song.next_song.artist} ----")
             current_song = current_song.next_song
 
 if __name__ == '__main__':
