@@ -1,7 +1,5 @@
 import os
-
-
-# ____________________________________PLAYLIST WITH LINKED LISTS_________________________________
+# ____________________________________CONTINUOUS PLAYLIST WITH CIRCULAR LINKED LISTS_________________________________
 """
 For advanced project consider using pydub, tkinter and other needed libraries with below considerations:
          - GUI where a user sees what song is playing
@@ -26,41 +24,49 @@ class Playlist:
     def add_song(self, song_title, song_artist, song_file_path):
         # Method to add a new song to the playlist
         new_song = Song(song_title, song_artist, song_file_path)
-        # Set the next_song attribute of the new song to the current head of the playlist
-        new_song.next_song = self.head
-        # Update the head of the playlist to be the new song
-        self.head = new_song
+
+        if not self.head:
+            self.head = new_song
+            self.head.next_song = self.head
+        else:
+            current_song = self.head
+            while current_song.next_song != self.head:
+                current_song = current_song.next_song
+            current_song.next_song = new_song
+            new_song.next_song = self.head
 
     def play_all_songs(self):
-        # Method to play all songs in the playlist
+        if not self.head:
+            print("The playlist is empty.")
+            return
+
         current_song = self.head
-        while current_song:
-            # Print information about the current song
+        while True:
             print(f"Now playing {current_song.title} by {current_song.artist}")
-            # Use the os.system() function to play the song
-            os.system(f'start "" "{current_song.file_path}"')  # Use double quotes for file paths with spaces
-            # Move to the next song in the playlist
+
+            # Display the name of the next song
+            next_song_name = current_song.next_song.title
+            next_song_artist = current_song.next_song.artist
+            print(f"Press Enter to play the next song: {next_song_name} by {next_song_artist}")
+
+            os.system(f'start "" "{current_song.file_path}"')
+            input()  # Wait for user input to play the next song
             current_song = current_song.next_song
 
 
 if __name__ == '__main__':
-    # Create a playlist
     playlist = Playlist()
 
     # Specify the directory where your music files are stored (modify accordingly)
-    music_directory = r"C:\Users\user\conda_projects\linked_list_music_playlist"
-
-    # Get a list of music files with mp3 and m4a extensions
+    music_directory = r"C:\Users\OtienBer\Desktop\NOTES\1 wd\Singles"
     music_files = [os.path.join(music_directory, file) for file in os.listdir(music_directory)
                    if file.lower().endswith((".mp3", ".m4a"))]
 
     # Add songs to the playlist from the selected music files
     for path in music_files:
-        # Extract title and artist information from the filename (modify accordingly)
         filename = os.path.splitext(os.path.basename(path))[0]
         if '-' in filename:
             path_artist, path_title = filename.split('-', 1)
             playlist.add_song(path_title.strip(), path_artist.strip(), path)
 
-    # Play all songs in the playlist
     playlist.play_all_songs()
