@@ -1,0 +1,86 @@
+"""
+___________________________________________________CODE STRUCTURE______________________________________________________
+ - Import key modules(mysql.connector, json)
+ - Initialize cursor and connection, set both cursor(enables python to interact with db) and conn variables to None
+ - Try to load MySQL credentials from a JSON file(mysql_credentials.json) using with open and json.load(f)
+  and handle FileNotFoundError by setting credentials = None. Example of the file contents:
+{
+    "username": "root",
+    "password": "pythonic",
+    "database": "my_inventory",
+    "host": "localhost"
+}
+ - If the credentials are True .i.e if credentials:,
+    try:
+        - Create a connection to the MySQL database.eg
+            conn = mysql.connector.connect(pass the expected args.eg user=credentials.get('username'))
+        - Create a cursor object to execute SQL queries: cursor = conn.cursor(), True if conn is established else None
+        - Create a sql query and execute it: cursor.execute(query)
+        - Fetch all the rows: rows = cursor.fetchall()
+        - Use a for loop to print the result: for row in rows: print(row)
+    Any Exception we expect at this point is from mysql connector, handle it wisely.e.g
+        except mysql.connector.Error as err: print(f"Error: {err}")
+    Close the cursor and connection in the 'finally' block to ensure they are closed.e.g
+        if cursor is not None:  # was None only when there was no connection, now it is not None, so close it
+            cursor.close()
+        if conn is not None and conn.is_connected():  # conn.is_connected() conn obj. may not be None but not connected
+            conn.close()
+ - Else print("Error: Unable to load MySQL credentials.")
+
+_______________________________________________________________________________________________________________________
+"""
+
+
+# Import key modules
+import mysql.connector
+import json
+
+# Initialize cursor and connection
+cursor = None
+conn = None
+
+# Try to load MySQL credentials from a JSON file
+try:
+    with open(r'C:\Users\user\Desktop\DATA++\CLASS NOTES\Program files\mysql_credentials.json') as f:
+        credentials = json.load(f)
+except FileNotFoundError:
+    credentials = None
+    print("Error: MySQL credentials file not found.")
+
+# Ensure your credentials were set up
+if credentials:
+    try:
+        # Connect to the MySQL database
+        conn = mysql.connector.connect(
+            user=credentials.get('username'),
+            password=credentials.get('password'),
+            database=credentials.get('database'),
+            host=credentials.get('host')
+        )
+
+        # Create a cursor object to execute SQL queries
+        cursor = conn.cursor()
+
+        # Example: Select all rows from the 'products' table that have export products
+        query = "SELECT `product_name` FROM `products` WHERE `product_name` LIKE '%Export' COLLATE utf8mb4_bin"
+        cursor.execute(query)
+
+        # Fetch all the rows
+        rows = cursor.fetchall()
+
+        # Print the results
+        print("_________________________EXPORT PRODUCTS FROM THE DATABASE_____________________")
+        for row in rows:
+            print(row)
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+
+    finally:
+        # Close the cursor and connection in the 'finally' block to ensure they are closed
+        if cursor is not None:
+            cursor.close()
+        if conn is not None and conn.is_connected():
+            conn.close()
+else:
+    print("Error: Unable to load MySQL credentials.")
