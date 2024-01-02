@@ -1,0 +1,97 @@
+"""
+___________________ CONCURRENT QUERYING IN RELATIONAL DATABASES: CASE EXAMPLE, MYSQL DB____________________
+Python project that leverages multithreading to execute concurrent queries on a Relational Database Management System (RDBMS).
+The program reads MySQL connection credentials from a JSON file, establishes connections to the database, and concurrently
+executes a set of predefined SQL queries across different categories. The results are organized and printed with timestamps,
+providing a streamlined approach to analyzing data concurrently from various perspectives. This project aims to enhance the
+efficiency of querying an RDBMS by leveraging the power of concurrent execution for improved performance and responsiveness.
+"""
+
+import mysql.connector
+import json
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+
+try:
+    with open(r'C:\Users\user\Desktop\DATA++\CLASS NOTES\Program files\mysql_credentials.json') as f:
+        credentials = json.load(f)
+except FileNotFoundError:
+    credentials = None
+    print("Error: MySQL credentials file not found.")
+
+# Replace with your actual database connection details
+db_config = {
+    'user': credentials.get('username'),
+    'password': credentials.get('password'),
+    'database': credentials.get('database'),
+    'host': credentials.get('host')
+}
+
+
+def fetch_and_print_data(query, category):
+    cursor = None
+    connection = None
+    try:
+        # Establish a connection
+        connection = mysql.connector.connect(**db_config)  # unpacking the dict: Alt, use .connect(db_config)
+
+        # Create a cursor
+        """
+        dictionary=True, it creates a cursor that returns rows as dictionaries, 
+        where the keys are column names. This means that you can access the data using column names instead of indices.
+        """
+        cursor = connection.cursor(dictionary=True)
+
+        # Execute the query
+        cursor.execute(query)
+
+        # Print the category header
+        print(f"_________________________________________ {category} ______________________________________")
+
+        # Fetch and print the results with a timestamp
+        results = cursor.fetchall()
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for result in results:
+            print(f"{timestamp} - {result}")
+
+    except mysql.connector.Error as err:
+        print(f"Error in query: {query}\nError message: {err}")
+
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+
+# Number of concurrent tasks
+num_pools = 5
+
+# Queries and corresponding categories to be executed concurrently
+queries_and_categories = [
+    ("SELECT product_name FROM recharge_prices WHERE product_name LIKE '%Export' LIMIT 10", "SOME EXPORT PRODUCTS"),
+    ("SELECT product_name FROM recharge_prices WHERE product_name LIKE '%local' LIMIT 10", "SOME LOCAL PRODUCTS"),
+    ("SELECT product_name FROM recharge_prices WHERE product_name LIKE '%CAN%' LIMIT 10", "SOME CANNED PRODUCTS"),
+    ("SELECT product_name FROM recharge_prices WHERE product_name LIKE '%CTN%' LIMIT 10", "SOME CARTON PRODUCTS"),
+    ("SELECT product_name FROM recharge_prices WHERE product_name LIKE '%RET%' AND product_name NOT LIKE '%CTN%' " +
+     "LIMIT 10",
+     "SOME RETURNABLES"),
+    # Add more queries and categories as needed
+]
+
+# Use ThreadPoolExecutor for concurrent execution
+# max_workers=len(queries_and_categories) - implies that up to three tasks (queries) can be executed concurrently
+with ThreadPoolExecutor(max_workers=len(queries_and_categories)) as executor:
+    """
+    ___Submit tasks with unique data___
+    Avoid using: tasks = [executor.submit(fetch_and_print_data(query, category)) for query, category in queries_and_categories]
+    Use: tasks = [executor.submit(fetch_and_print_data, query, category) for query, category in queries_and_categories]
+    as the latter immediately executes fetch_and_print_data in the main thread, and the result (not the thread itself) is passed to submit
+    This defeats the purpose of using submit for concurrent execution.
+    """
+    tasks = [executor.submit(fetch_and_print_data, query, category) for query, category in queries_and_categories]
+
+    # Wait for all tasks to complete
+    for future in tasks:
+        future.result()
+
+
