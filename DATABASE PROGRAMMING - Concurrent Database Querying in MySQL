@@ -1,5 +1,5 @@
 """
-___________________ CONCURRENT QUERYING IN RELATIONAL DATABASES: CASE EXAMPLE, MYSQL DB____________________
+___________________ CONCURRENT QUERYING(PARALLELISM) IN RELATIONAL DATABASES: CASE EXAMPLE, MYSQL DB____________________
 Python project that leverages multithreading to execute concurrent queries on a Relational Database Management System (RDBMS).
 The program reads MySQL connection credentials from a JSON file, establishes connections to the database, and concurrently
 executes a set of predefined SQL queries across different categories. The results are organized and printed with timestamps,
@@ -79,8 +79,12 @@ queries_and_categories = [
 ]
 
 # Use ThreadPoolExecutor for concurrent execution
-# max_workers=len(queries_and_categories) - implies that up to three tasks (queries) can be executed concurrently
-with ThreadPoolExecutor(max_workers=len(queries_and_categories)) as executor:
+# max_workers=len(queries_and_categories) + 1 - implies that up to 6 tasks (queries) can be executed concurrently
+"""
+Setting max_workers to a value higher than the number of tasks allows the thread pool to execute tasks concurrently, 
+taking advantage of parallelism even if the tasks are not CPU-bound
+"""
+with ThreadPoolExecutor(max_workers=len(queries_and_categories) + 1) as executor:
     """
     ___Submit tasks with unique data___
     Avoid using: tasks = [executor.submit(fetch_and_print_data(query, category)) for query, category in queries_and_categories]
