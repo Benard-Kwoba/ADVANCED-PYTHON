@@ -1,0 +1,99 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import io
+from PIL import Image
+
+def show_unprocessed_image(image_data, color_map):
+    plt.imshow(image_data, cmap=color_map)
+    plt.colorbar()
+    plt.title("Original Unprocessed Image")
+    plt.show()
+
+def save_image_in_memory():
+    plt_buf = io.BytesIO()
+    plt.savefig(plt_buf, format='png', facecolor="green")
+    plt_buf.seek(0)
+    plt_buf_image_base64 = plt_buf.getvalue()
+    with open("image_processing_example.png", "wb") as f:
+        f.write(plt_buf_image_base64)
+
+def convert_image_to_pil_object(image_data, color_map='viridis'):
+    plt.imshow(image_data, cmap=color_map)
+    plt.colorbar()
+    # plt.title("Processing image...")
+    plt_buf = io.BytesIO()
+    plt.savefig(plt_buf, format='png')
+    plt_buf.seek(0)
+    image = Image.open(plt_buf)
+    plt.clf()  # Clear the figure to remove the axes
+    return image
+
+def resize_image(image, new_size=(600, 400)):
+    resized_image = image.resize(new_size)
+    return resized_image
+
+def save_and_show_resized_image(original_image, resized_image, filename="processed_image.png"):
+    # Display the unprocessed image
+    # plt.figure()
+    plt.imshow(original_image, cmap='viridis')
+    # plt.colorbar()
+    plt.title("Unprocessed Image")
+    plt.savefig(filename.replace(".png", "_unprocessed.png"))
+    plt.axis("off")
+    plt.show()
+
+    # Display the resized image with the same color map
+    # plt.figure()
+    plt.imshow(resized_image, cmap='viridis')  # Use the same color map
+    # plt.colorbar()
+    plt.title("Resized Image")
+    plt.savefig(filename)
+    plt.axis("off")
+    plt.show()
+
+if __name__ == "__main__":
+    # Create a sample 2D array as an example image
+    image_data = np.random.rand(10, 10)
+
+    # Set the figure size
+    # plt.figure(figsize=(15, 6))
+
+    while True:
+        user_selection = input("""
+----------------------------------- IMAGE PROCESSING WITH PYTHON ------------------------------
+1 - To show unprocessed image
+2 - To save image in memory (binary)
+3 - To convert image to PIL object
+4 - Image processing operations
+5 - Exit
+------------------------------------------------------------------------------------------------
+""")
+        if user_selection == '1':
+            print("Done. Check the image pop-up!!!")
+            show_unprocessed_image(image_data, 'viridis')
+        elif user_selection == '2':
+            print("Done. Image saved in memory")
+            save_image_in_memory()
+        elif user_selection == '3':
+            pil_image = convert_image_to_pil_object(image_data)
+            print("Unprocessed Image converted to PIL object.")
+        elif user_selection == '4':
+            processing_operation = input("""
+1 - To resize
+""")
+            if processing_operation == '1':
+                if 'pil_image' not in locals():
+                    print("Error: Convert the image to PIL object first.")
+                else:
+                    try:
+                        new_size = tuple(map(int, input("Enter new size (width height): ").split()))
+                        resized_image = resize_image(pil_image, new_size)
+                        save_and_show_resized_image(np.array(pil_image), np.array(resized_image))
+                        print("Image resized and displayed.")
+                    except Exception as e:
+                        print(f"Error: {e}")
+        elif user_selection == '5':
+            print("Exiting the program.")
+            break
+        else:
+            print("Wrong Selection. Please enter a valid option.")
