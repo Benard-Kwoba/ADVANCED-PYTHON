@@ -61,7 +61,7 @@ if credentials:
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
 
-        # Example: Select all rows from the 'products' table that have export products
+        # Example: Select all rows from the 'products' table that have export products(See sql repository with agl_inventory database)
         query = "SELECT `product_name` FROM `products` WHERE `product_name` LIKE '%Export' COLLATE utf8mb4_bin"
         cursor.execute(query)
 
@@ -84,3 +84,112 @@ if credentials:
             conn.close()
 else:
     print("Error: Unable to load MySQL credentials.")
+
+"""
+___________________________ EXECUTING STORED PROCEDURES______________________________________________________
+# Import key modules
+import mysql.connector
+import json
+
+# Initialize cursor and connection
+cursor = None
+conn = None
+
+# Try to load MySQL credentials from a JSON file
+try:
+    with open(r'C:\Users\user\Desktop\DATA++\CLASS NOTES\Program files\mysql_credentials.json') as f:
+        credentials = json.load(f)
+except FileNotFoundError:
+    credentials = None
+    print("Error: MySQL credentials file not found.")
+
+# Ensure your credentials were set up
+if credentials:
+    try:
+        # Connect to the MySQL database
+        conn = mysql.connector.connect(
+            user=credentials.get('username'),
+            password=credentials.get('password'),
+            database=credentials.get('database'),
+            host=credentials.get('host')
+        )
+
+        # Create a cursor object to execute SQL queries
+        cursor = conn.cursor()
+
+        # Example:Get the BOM of a product using database stored procedure GetBOM()
+        product_code = int(input('Enter product code: '))
+        query = f"CALL `agl_inventory`.GetBOM({product_code});"
+        cursor.execute(query)
+        # Fetch all the rows
+        rows = cursor.fetchall()
+
+        # Print the results
+        print(f"_________________________ BILL OF MATERIAL FOR: {product_code} _____________________")
+        print("(product, bottle, shell)")
+        for row in rows:
+            print(row)
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+
+    finally:
+        # Close the cursor and connection in the 'finally' block to ensure they are closed
+        if cursor is not None:
+            cursor.close()
+        if conn is not None and conn.is_connected():
+            conn.close()
+else:
+    print("Error: Unable to load MySQL credentials.")
+
+____________________________ MAKING COMMITMENTS TO THE DATABASE ______________________________________________
+Add another column in the `temp_recharge_prices` table called 'PythonColumn' with default value NULL
+# Import key modules
+import mysql.connector
+import json
+
+# Initialize cursor and connection
+cursor = None
+conn = None
+
+# Try to load MySQL credentials from a JSON file
+try:
+    with open(r'C:\Users\user\Desktop\DATA++\CLASS NOTES\Program files\mysql_credentials.json') as f:
+        credentials = json.load(f)
+except FileNotFoundError:
+    credentials = None
+    print("Error: MySQL credentials file not found.")
+
+# Ensure your credentials were set up
+if credentials:
+    try:
+        # Connect to the MySQL database
+        conn = mysql.connector.connect(
+            user=credentials.get('username'),
+            password=credentials.get('password'),
+            database=credentials.get('database'),
+            host=credentials.get('host')
+        )
+
+        # Create a cursor object to execute SQL queries
+        cursor = conn.cursor()
+
+        # Add a new column with default value NULL
+        add_column_query = "ALTER TABLE `temp_recharge_prices` ADD COLUMN `PythonColumn` VARCHAR(255) DEFAULT NULL"
+        cursor.execute(add_column_query)
+
+        # Commit the changes
+        conn.commit()
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+
+    finally:
+        # Close the cursor and connection in the 'finally' block to ensure they are closed
+        if cursor is not None:
+            cursor.close()
+        if conn is not None and conn.is_connected():
+            conn.close()
+else:
+    print("Error: Unable to load MySQL credentials.")
+"""
