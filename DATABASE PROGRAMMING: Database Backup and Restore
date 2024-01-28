@@ -1,0 +1,63 @@
+import subprocess
+import json
+
+
+def backup_database(backup_file="agl_inventory_backup.sql"):  # file will be in current script directory
+    try:
+        # directory to your sql credentials file: change accordingly
+        with open(r'C:\Users\user\Desktop\DATA++\CLASS NOTES\Program files\mysql_credentials.json') as f:
+            credentials = json.load(f)
+    except FileNotFoundError:
+        credentials = None
+        print("Error: MySQL credentials file not found.")
+
+    # Ensure your credentials were set up
+    if credentials:
+        try:
+            user_input = input("Enter password for backup: ")
+            username = credentials.get('username')
+            password = credentials.get('password')
+            database = credentials.get('database')
+
+            if user_input == password:
+                command = f"mysqldump -u {username} -p{password} {database} > {backup_file}"
+                subprocess.run(command, shell=True)
+            else:
+                print('Wrong password')
+                exit()
+
+        except FileNotFoundError:
+            print(f"The file with database credentials could not be loaded\nOR database error")
+
+
+def restore_database(restoration_database="restored_agl_inventory"):
+    try:
+        with open(r'C:\Users\user\Desktop\DATA++\CLASS NOTES\Program files\mysql_credentials.json') as f:
+            credentials = json.load(f)
+    except FileNotFoundError:
+        credentials = None
+        print("Error: MySQL credentials file not found.")
+
+    # Ensure your credentials were set up
+    if credentials:
+        try:
+            user_input2 = input('Enter password for restoration: ')
+            username = credentials.get('username')
+            password = credentials.get('password')
+
+            if user_input2 == password:
+                command = f"mysql -u {username} -p{password} {restoration_database} < {'restored_agl_inventory.sql'}"
+                subprocess.run(command, shell=True)
+            else:
+                print('Wrong password')
+                exit()
+
+        except FileNotFoundError:
+            print(f"The file with database credentials could not be loaded\nOR database error")
+
+
+"""
+Example usage: To backup
+backup_database()
+"""
+
