@@ -24,7 +24,7 @@ class CalculatorApp(QWidget):  # QWidget- "parent class" or "base class" , Calcu
         self.input_field = QLineEdit()
         input_layout.addWidget(self.input_field)
         # Add author field/label
-        self.author_label = QLabel("CREATED BY BENAYAHU")
+        self.author_label = QLabel("©BenayahuSolutions")
         self.author_label.setStyleSheet("color: white; text-decoration: underline;")
         # Add mode selection label
         self.mode_selection_label = QLabel("Mode Selection")
