@@ -1,3 +1,4 @@
+# __________________________________________________ VERSION 1.0 ______________________________________________________
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget, QLabel
 
@@ -152,3 +153,190 @@ if __name__ == '__main__':
     todo_app = TodoApp()
     todo_app.show()
     sys.exit(app.exec_())
+
+
+
+
+
+# __________________________________________________ VERSION 1.1 ______________________________________________________
+
+import sys
+from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget,
+                             QLabel, QAbstractItemView)
+
+
+class TodoApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Programmer's To-Do List App")
+        self.resize(600, 400)
+        self.pending_tasks = []
+        self.completed_tasks = []
+
+        # Create layouts
+        main_layout = QHBoxLayout(self)  # creates a QHBoxLayout instance named main_layout, setting self (the TodoApp instance) as its parent widget.
+        left_layout = QVBoxLayout()
+        right_layout = QVBoxLayout()
+
+        # Left Frame
+        left_label = QLabel("PENDING TASKS")
+        self.pending_tasks_listbox = QListWidget()
+        self.pending_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)  # see MultipleSelection
+        self.task_entry = QLineEdit()
+        # Set default placeholder for text entry
+        self.task_entry.setPlaceholderText("ADD TASK HERE")
+        add_task_button = QPushButton("Add a task")
+        add_task_button.clicked.connect(self.add_tasks)
+        complete_task_button = QPushButton("Mark task as completed")
+        complete_task_button.clicked.connect(self.complete_task)
+
+        left_layout.addWidget(left_label)
+        left_layout.addWidget(self.pending_tasks_listbox)
+        left_layout.addWidget(self.task_entry)
+        left_layout.addWidget(add_task_button)
+        left_layout.addWidget(complete_task_button)
+
+        # Right Frame
+        right_label = QLabel("COMPLETED TASKS")
+        self.completed_tasks_listbox = QListWidget()
+        self.completed_tasks_listbox.setToolTip('Use CTRL+Selection for multiple item selection')
+        self.completed_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        clear_completed_task_button = QPushButton("Clear all completed tasks")
+        clear_completed_task_button.setToolTip('Clear all tasks')
+        clear_completed_task_button.clicked.connect(self.clear_completed_tasks)
+        clear_a_completed_task_button = QPushButton("Clear selected completed task(s)")
+        clear_a_completed_task_button.clicked.connect(self.clear_a_completed_task)
+
+        right_layout.addWidget(right_label)
+        right_layout.addWidget(self.completed_tasks_listbox)
+        right_layout.addWidget(clear_a_completed_task_button)
+        right_layout.addWidget(clear_completed_task_button)
+
+        # Add layouts to main layout
+        main_layout.addLayout(left_layout)
+        main_layout.addLayout(right_layout)
+
+        # Set background colors
+        self.setStyleSheet("""
+            QWidget {
+                background-color: black;
+            }
+            QLabel {
+                background-color: #ffcc00;
+                padding: 5px;
+                color: black;
+                font-weight:bold;
+            }
+            /*For multiple element style use e.g QListWidget, QLineEdit */
+            QListWidget {
+                background-color: #cccccc;
+            }
+            QLineEdit {
+                background-color: white;
+                color: black;
+                font-weight: bold;
+            }
+            QPushButton {
+                background-color: #98FB98;
+                border: 1px solid #4CAF50;
+                border-radius: 10px;
+                padding: 5px 10px;
+            }
+            QPushButton:hover {
+                background-color: yellow;
+            }
+            QPushButton:pressed {
+                background-color: #FF0000;
+            }
+
+        """)
+
+        self.load_tasks()
+
+    def add_tasks(self):
+        task = self.task_entry.text().upper()
+        if task:
+            self.pending_tasks.append(task)
+            self.update_pending_tasks_listbox()
+            self.task_entry.clear()
+            self.save_tasks()
+
+    def complete_task(self):
+        selected_tasks_indexes = self.pending_tasks_listbox.selectedIndexes()
+        selected_tasks_indexes.sort(reverse=True,
+                                    key=lambda x: x.row())  # Reverse sorting to avoid issues when removing items
+        for index in selected_tasks_indexes:
+            selected_task_index = index.row()
+            completed_task = self.pending_tasks.pop(selected_task_index)
+            self.completed_tasks.append(completed_task)
+
+        self.update_pending_tasks_listbox()
+        self.update_completed_tasks_listbox()
+        self.save_tasks()
+
+    def clear_a_completed_task(self):
+        selected_tasks_to_clear = self.completed_tasks_listbox.selectedIndexes()
+        selected_tasks_to_clear.sort(reverse=True,
+                                     key=lambda x: x.row())  # Reverse sorting to avoid issues when removing items
+        for index in selected_tasks_to_clear:
+            selected_task_index = index.row()
+            cleared_task = self.completed_tasks.pop(selected_task_index)
+
+        self.update_completed_tasks_listbox()
+        self.save_tasks()
+
+    def clear_completed_tasks(self):
+        self.completed_tasks = []
+        self.update_completed_tasks_listbox()
+        self.save_tasks()
+
+    def update_pending_tasks_listbox(self):
+        self.pending_tasks_listbox.clear()
+        for task in self.pending_tasks:
+            self.pending_tasks_listbox.addItem(task)
+
+    def update_completed_tasks_listbox(self):
+        self.completed_tasks_listbox.clear()
+        for task in self.completed_tasks:
+            self.completed_tasks_listbox.addItem(task)
+
+    def load_tasks(self):
+        try:
+            with open("PyQt5_tasks.txt", "r") as file:
+                lines = file.readlines()
+                self.pending_tasks = []
+                self.completed_tasks = []
+
+                pending_section = True
+                for line in lines:
+                    line = line.strip()
+                    if line == "Completed Tasks:":
+                        pending_section = False
+                    elif pending_section and line != "Pending Tasks:":
+                        self.pending_tasks.append(line)
+                    elif not pending_section:
+                        self.completed_tasks.append(line)
+
+                self.update_pending_tasks_listbox()
+                self.update_completed_tasks_listbox()
+
+        except FileNotFoundError:
+            pass
+
+    def save_tasks(self):
+        with open("PyQt5_tasks.txt", "w") as file:
+            file.write("Pending Tasks:\n")
+            for task in self.pending_tasks:
+                file.write(task + "\n")
+
+            file.write("Completed Tasks:\n")
+            for task in self.completed_tasks:
+                file.write(task + "\n")
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    todo_app = TodoApp()
+    todo_app.show()
+    sys.exit(app.exec_())
+
