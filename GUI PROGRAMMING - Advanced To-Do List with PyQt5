@@ -162,8 +162,22 @@ if __name__ == '__main__':
 
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget,
-                             QLabel, QAbstractItemView)
+                             QLabel, QAbstractItemView, QToolTip)
+from PyQt5.QtCore import Qt
 
+
+# Creating a custom line edit class:  subclassing a widget
+class CustomLineEdit(QLineEdit):
+    def __init__(self, parent=None):  # constructor method for the CustomLineEdit class, default parent widget: None
+        super().__init__(parent)  # calls the constructor of the superclass (i.e., the parent class) of CustomLineEdit.
+        # super(): returns a proxy object that allows you to call methods of the superclass
+
+    def keyPressEvent(self, event):
+        # Handling the key press event for Escape key
+        if event.key() == Qt.Key_Escape:
+            self.clear()  # Clear the text when Escape key is pressed
+        else:
+            super().keyPressEvent(event)
 
 class TodoApp(QWidget):
     def __init__(self):
@@ -174,7 +188,8 @@ class TodoApp(QWidget):
         self.completed_tasks = []
 
         # Create layouts
-        main_layout = QHBoxLayout(self)  # creates a QHBoxLayout instance named main_layout, setting self (the TodoApp instance) as its parent widget.
+        main_layout = QHBoxLayout(
+            self)  # creates a QHBoxLayout instance named main_layout, setting self (the TodoApp instance) as its parent widget.
         left_layout = QVBoxLayout()
         right_layout = QVBoxLayout()
 
@@ -182,12 +197,17 @@ class TodoApp(QWidget):
         left_label = QLabel("PENDING TASKS")
         self.pending_tasks_listbox = QListWidget()
         self.pending_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)  # see MultipleSelection
-        self.task_entry = QLineEdit()
-        # Set default placeholder for text entry
-        self.task_entry.setPlaceholderText("ADD TASK HERE")
-        add_task_button = QPushButton("Add a task")
+        self.pending_tasks_listbox.keyPressEvent = self.pending_tasks_deletion_with_delete_keypress
+        self.pending_tasks_listbox.setToolTip('Use Delete Key on Selection(s)\nTo Delete an item(s)')
+
+        self.task_entry = CustomLineEdit()
+        self.task_entry.setPlaceholderText("ADD TASK")
+        self.task_entry.setToolTip("Press ESC key to reset entry\nOnce Done Click\n'Add a Task' Button Or Press Enter Key")
+        self.task_entry.returnPressed.connect(self.add_tasks)
+
+        add_task_button = QPushButton("Add a Task")
         add_task_button.clicked.connect(self.add_tasks)
-        complete_task_button = QPushButton("Mark task as completed")
+        complete_task_button = QPushButton("Mark selected task(s) as completed")
         complete_task_button.clicked.connect(self.complete_task)
 
         left_layout.addWidget(left_label)
@@ -199,8 +219,9 @@ class TodoApp(QWidget):
         # Right Frame
         right_label = QLabel("COMPLETED TASKS")
         self.completed_tasks_listbox = QListWidget()
-        self.completed_tasks_listbox.setToolTip('Use CTRL+Selection for multiple item selection')
+        self.completed_tasks_listbox.setToolTip('Use CTRL+Selection\nfor multiple item selection')
         self.completed_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)
+
         clear_completed_task_button = QPushButton("Clear all completed tasks")
         clear_completed_task_button.setToolTip('Clear all tasks')
         clear_completed_task_button.clicked.connect(self.clear_completed_tasks)
@@ -219,7 +240,7 @@ class TodoApp(QWidget):
         # Set background colors
         self.setStyleSheet("""
             QWidget {
-                background-color: black;
+                background-color: #000;
             }
             QLabel {
                 background-color: #ffcc00;
@@ -248,7 +269,14 @@ class TodoApp(QWidget):
             QPushButton:pressed {
                 background-color: #FF0000;
             }
-
+            QToolTip {
+                border: 2px solid black; /* Border color and width */
+                border-radius: 7px; /* Border radius to make it circular */
+                background-color: grey; /* Background color */
+                color: yellow; /* Text color */
+                padding: 8px; /* Padding inside the tooltip */
+                overflow: hidden;
+}
         """)
 
         self.load_tasks()
@@ -261,6 +289,18 @@ class TodoApp(QWidget):
             self.task_entry.clear()
             self.save_tasks()
 
+    def pending_tasks_deletion_with_delete_keypress(self, event):
+        if event.key() == Qt.Key_Delete:
+            selected_items = self.pending_tasks_listbox.selectedItems()
+            for item in selected_items:
+                # remove selected item's text from the self.pending_tasks list
+                self.pending_tasks.remove(item.text())
+                # remove the item itself from the self.pending_tasks_listbox
+                self.pending_tasks_listbox.takeItem(self.pending_tasks_listbox.row(item))
+                self.save_tasks()
+        else:
+            # If delete key is not pressed, pass the event to the default implementation
+            super().keyPressEvent(event)
     def complete_task(self):
         selected_tasks_indexes = self.pending_tasks_listbox.selectedIndexes()
         selected_tasks_indexes.sort(reverse=True,
@@ -321,7 +361,7 @@ class TodoApp(QWidget):
                 self.update_completed_tasks_listbox()
 
         except FileNotFoundError:
-            pass
+            return 'PyQt5_tasks.txt is missing'
 
     def save_tasks(self):
         with open("PyQt5_tasks.txt", "w") as file:
@@ -339,4 +379,3 @@ if __name__ == '__main__':
     todo_app = TodoApp()
     todo_app.show()
     sys.exit(app.exec_())
-
