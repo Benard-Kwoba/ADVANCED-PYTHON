@@ -158,12 +158,13 @@ if __name__ == '__main__':
 
 
 
-# __________________________________________________ VERSION 1.1 ______________________________________________________
 
+# ______________________________________________ ADVANCED TO-DO LIST: VERSION 1.1 _____________________________________
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget,
-                             QLabel, QAbstractItemView, QToolTip)
+                             QLabel, QAbstractItemView, QToolTip, QMenu, QMessageBox)
 from PyQt5.QtCore import Qt
+
 
 
 # Creating a custom line edit class:  subclassing a widget
@@ -182,6 +183,9 @@ class CustomLineEdit(QLineEdit):
 class TodoApp(QWidget):
     def __init__(self):
         super().__init__()
+        self.initUI()
+
+    def initUI(self):
         self.setWindowTitle("Programmer's To-Do List App")
         self.resize(600, 400)
         self.pending_tasks = []
@@ -197,8 +201,10 @@ class TodoApp(QWidget):
         left_label = QLabel("PENDING TASKS")
         self.pending_tasks_listbox = QListWidget()
         self.pending_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)  # see MultipleSelection
-        self.pending_tasks_listbox.keyPressEvent = self.pending_tasks_deletion_with_delete_keypress
-        self.pending_tasks_listbox.setToolTip('Use Delete Key on Selection(s)\nTo Delete an item(s)')
+        self.pending_tasks_listbox.keyPressEvent = self.pending_tasks_keypress
+        self.pending_tasks_listbox.setToolTip('Use Delete Key or Ctrl + D\non Selection(s) To\nDelete an item(s)')
+        self.pending_tasks_listbox.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.pending_tasks_listbox.customContextMenuRequested.connect(self.pendingTasksContextMenu)
 
         self.task_entry = CustomLineEdit()
         self.task_entry.setPlaceholderText("ADD TASK")
@@ -216,7 +222,6 @@ class TodoApp(QWidget):
         left_layout.addWidget(add_task_button)
         left_layout.addWidget(complete_task_button)
 
-        # Right Frame
         right_label = QLabel("COMPLETED TASKS")
         self.completed_tasks_listbox = QListWidget()
         self.completed_tasks_listbox.setToolTip('Use CTRL+Selection\nfor multiple item selection')
@@ -276,31 +281,94 @@ class TodoApp(QWidget):
                 color: yellow; /* Text color */
                 padding: 8px; /* Padding inside the tooltip */
                 overflow: hidden;
-}
+            }
+            QMenu {
+                background-color: None;
+            }
+            
         """)
 
         self.load_tasks()
 
+    def pendingTasksContextMenu(self, pos):
+        context_menu = QMenu(self)
+        # context_menu.setEnabled(False) to disable
+        delete_action = context_menu.addAction("Delete            Delete")
+        select_all_action = context_menu.addAction("Select All      Ctrl+A")
+        copy_action = context_menu.addAction("Copy            Ctrl+C")
+        action = context_menu.exec_(self.mapToGlobal(pos))
+        if action == delete_action:
+            self.pendingTasksContextMenu_DeleteTask()
+        elif action == select_all_action:
+            self.pendingTasksContextMenu_SelectAll()
+        elif action == copy_action:
+            self.pendingTasksContextMenu_Copy()
+
+    def pendingTasksContextMenu_DeleteTask(self):
+        selected_items = self.pending_tasks_listbox.selectedItems()
+        for item in selected_items:
+            # remove selected item's text from the self.pending_tasks list
+            self.pending_tasks.remove(item.text())
+            # remove the item itself from the self.pending_tasks_listbox
+            self.pending_tasks_listbox.takeItem(self.pending_tasks_listbox.row(item))
+            self.save_tasks()
+
+    def pendingTasksContextMenu_SelectAll(self):
+        self.pending_tasks_listbox.selectAll()
+
+    def pendingTasksContextMenu_Copy(self):
+        selected_items = self.pending_tasks_listbox.selectedItems()
+        if selected_items:
+            clipboard_text = "\n".join(item.text() for item in selected_items)
+            QApplication.clipboard().setText(clipboard_text)
+
+
     def add_tasks(self):
         task = self.task_entry.text().upper()
         if task:
-            self.pending_tasks.append(task)
-            self.update_pending_tasks_listbox()
-            self.task_entry.clear()
-            self.save_tasks()
-
-    def pending_tasks_deletion_with_delete_keypress(self, event):
-        if event.key() == Qt.Key_Delete:
-            selected_items = self.pending_tasks_listbox.selectedItems()
-            for item in selected_items:
-                # remove selected item's text from the self.pending_tasks list
-                self.pending_tasks.remove(item.text())
-                # remove the item itself from the self.pending_tasks_listbox
-                self.pending_tasks_listbox.takeItem(self.pending_tasks_listbox.row(item))
+            if task not in self.pending_tasks:
+                self.pending_tasks.append(task)
+                self.update_pending_tasks_listbox()
+                self.task_entry.clear()
                 self.save_tasks()
+            else:
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Warning)
+                msg_box.setText("Task already exists in the pending tasks list.")
+                msg_box.setWindowTitle("Duplicate Task")
+                msg_box.exec_()
+
+    def pending_tasks_keypress(self, event):
+        modifiers = QApplication.keyboardModifiers()
+        if event.key() == Qt.Key_D and modifiers == Qt.ControlModifier:
+            # Ctrl + D pressed, delete selected items
+            self.pendingTasksContextMenu_DeleteTask()
+        elif event.key() == Qt.Key_Delete:  # Delete is not used with modifiers like Ctrl, Alt, Shift, Meta keys(windows)
+            # Delete pressed, delete selected items
+            self.pendingTasksContextMenu_DeleteTask()
+        elif event.key() == Qt.Key_A and modifiers == Qt.ControlModifier:
+            # Ctrl + A pressed, select all items
+            self.pending_tasks_listbox.selectAll()
+        elif event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
+            selected_items = self.pending_tasks_listbox.selectedItems()
+            if selected_items:
+                clipboard_text = "\n".join(item.text() for item in selected_items)
+                QApplication.clipboard().setText(clipboard_text)
         else:
-            # If delete key is not pressed, pass the event to the default implementation
+            # Pass other key events to the default implementation
             super().keyPressEvent(event)
+
+    def completed_tasks_keypress(self, event):
+        modifiers = QApplication.keyboardModifiers()
+        if event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
+            selected_items = self.completed_tasks_listbox.selectedItems()
+            if selected_items:
+                clipboard_text = "\n".join(item.text() for item in selected_items)
+                QApplication.clipboard().setText(clipboard_text)
+        else:
+            # Pass other key events to the default implementation
+            super().keyPressEvent(event)
+
     def complete_task(self):
         selected_tasks_indexes = self.pending_tasks_listbox.selectedIndexes()
         selected_tasks_indexes.sort(reverse=True,
@@ -379,3 +447,4 @@ if __name__ == '__main__':
     todo_app = TodoApp()
     todo_app.show()
     sys.exit(app.exec_())
+
