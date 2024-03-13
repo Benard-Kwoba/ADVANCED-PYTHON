@@ -162,10 +162,10 @@ if __name__ == '__main__':
 # ______________________________________________ ADVANCED TO-DO LIST: VERSION 1.1 _____________________________________
 import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QListWidget,
-                             QLabel, QAbstractItemView, QToolTip, QMenu, QMessageBox)
+                             QLabel, QAbstractItemView, QToolTip, QMenu, QMessageBox, QAction, QColorDialog,
+                             QListWidgetItem)
 from PyQt5.QtCore import Qt
-
-
+from PyQt5.QtGui import QIcon
 
 # Creating a custom line edit class:  subclassing a widget
 class CustomLineEdit(QLineEdit):
@@ -180,14 +180,16 @@ class CustomLineEdit(QLineEdit):
         else:
             super().keyPressEvent(event)
 
+
 class TodoApp(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle("Programmer's To-Do List App")
-        self.resize(600, 400)
+        self.setWindowTitle("To Do List App")
+        self.setWindowIcon(QIcon("todo_icon.jpg"))
+        self.resize(600, 400)  # see self.setGeometry(600, 600, 400, 300)
         self.pending_tasks = []
         self.completed_tasks = []
 
@@ -202,16 +204,24 @@ class TodoApp(QWidget):
         self.pending_tasks_listbox = QListWidget()
         self.pending_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)  # see MultipleSelection
         self.pending_tasks_listbox.keyPressEvent = self.pending_tasks_keypress
-        self.pending_tasks_listbox.setToolTip('Use Delete Key or Ctrl + D\non Selection(s) To\nDelete an item(s)')
+        self.pending_tasks_listbox.setToolTip('-Use Delete Key or Ctrl + D\non Selection(s) To Delete\nan item(s)' \
+                                              '\n-Double click to select')
         self.pending_tasks_listbox.setContextMenuPolicy(Qt.CustomContextMenu)
         self.pending_tasks_listbox.customContextMenuRequested.connect(self.pendingTasksContextMenu)
+        self.pending_tasks_listbox.itemDoubleClicked.connect(self.pending_task_doubleclickToCopy)
+        self.pending_tasks_listbox.setDragEnabled(True)
+        self.pending_tasks_listbox.setAcceptDrops(True)
+        self.pending_tasks_listbox.viewport().installEventFilter(self)
+
 
         self.task_entry = CustomLineEdit()
+        self.task_entry.setEchoMode(0)  # 2 for password entries
         self.task_entry.setPlaceholderText("ADD TASK")
-        self.task_entry.setToolTip("Press ESC key to reset entry\nOnce Done Click\n'Add a Task' Button Or Press Enter Key")
+        self.task_entry.setToolTip(
+            "Press ESC key to reset entry\nOnce Done Click\n'Add a Task' Button Or Press Enter Key")
         self.task_entry.returnPressed.connect(self.add_tasks)
 
-        add_task_button = QPushButton("Add a Task")
+        add_task_button = QPushButton("Add a Task")  # add_task_button.setText('Add a Task')
         add_task_button.clicked.connect(self.add_tasks)
         complete_task_button = QPushButton("Mark selected task(s) as completed")
         complete_task_button.clicked.connect(self.complete_task)
@@ -226,6 +236,9 @@ class TodoApp(QWidget):
         self.completed_tasks_listbox = QListWidget()
         self.completed_tasks_listbox.setToolTip('Use CTRL+Selection\nfor multiple item selection')
         self.completed_tasks_listbox.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.completed_tasks_listbox.setDragEnabled(True)
+        self.completed_tasks_listbox.setAcceptDrops(True)  # Enable dropping here
+        self.completed_tasks_listbox.viewport().installEventFilter(self)
 
         clear_completed_task_button = QPushButton("Clear all completed tasks")
         clear_completed_task_button.setToolTip('Clear all tasks')
@@ -285,20 +298,35 @@ class TodoApp(QWidget):
             QMenu {
                 background-color: None;
             }
-            
+
         """)
 
         self.load_tasks()
 
+    def pending_task_doubleclickToCopy(self, item):
+        clipboard = QApplication.clipboard()
+        clipboard.setText(item.text())
     def pendingTasksContextMenu(self, pos):
         context_menu = QMenu(self)
+        # sub menu
+        context_menu_submenu = context_menu.addMenu("More")
+        change_text_color_action = context_menu_submenu.addAction("Change Text Color")
+        change_background_color_action = context_menu_submenu.addAction("Change Background Color")
+        change_text_color_action.triggered.connect(self.context_menu_submenu_changeTextColor)
+        change_background_color_action.triggered.connect(self.context_menu_submenu_changeBackgroundColor)
+        context_menu.addSeparator()
         # context_menu.setEnabled(False) to disable
+        complete_task_action = context_menu.addAction("Complete Task")
+        context_menu.addSeparator()
         delete_action = context_menu.addAction("Delete            Delete")
         select_all_action = context_menu.addAction("Select All      Ctrl+A")
         copy_action = context_menu.addAction("Copy            Ctrl+C")
         action = context_menu.exec_(self.mapToGlobal(pos))
+
         if action == delete_action:
             self.pendingTasksContextMenu_DeleteTask()
+        elif action == complete_task_action:
+            self.complete_task()
         elif action == select_all_action:
             self.pendingTasksContextMenu_SelectAll()
         elif action == copy_action:
@@ -321,23 +349,6 @@ class TodoApp(QWidget):
         if selected_items:
             clipboard_text = "\n".join(item.text() for item in selected_items)
             QApplication.clipboard().setText(clipboard_text)
-
-
-    def add_tasks(self):
-        task = self.task_entry.text().upper()
-        if task:
-            if task not in self.pending_tasks:
-                self.pending_tasks.append(task)
-                self.update_pending_tasks_listbox()
-                self.task_entry.clear()
-                self.save_tasks()
-            else:
-                msg_box = QMessageBox()
-                msg_box.setIcon(QMessageBox.Warning)
-                msg_box.setText("Task already exists in the pending tasks list.")
-                msg_box.setWindowTitle("Duplicate Task")
-                msg_box.exec_()
-
     def pending_tasks_keypress(self, event):
         modifiers = QApplication.keyboardModifiers()
         if event.key() == Qt.Key_D and modifiers == Qt.ControlModifier:
@@ -358,6 +369,64 @@ class TodoApp(QWidget):
             # Pass other key events to the default implementation
             super().keyPressEvent(event)
 
+    def context_menu_submenu_changeTextColor(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.pending_tasks_listbox.setStyleSheet(f"color: {color.name()}")
+
+    def context_menu_submenu_changeBackgroundColor(self):
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self.pending_tasks_listbox.setStyleSheet(f"background-color: {color.name()}")
+
+    def add_tasks(self):
+        task = self.task_entry.text().upper()
+        if task:
+            if task not in self.pending_tasks:
+                self.pending_tasks.append(task)
+                self.update_pending_tasks_listbox()
+                self.task_entry.clear()
+                self.save_tasks()
+            else:
+                msg_box = QMessageBox()
+                msg_box.setIcon(QMessageBox.Warning)
+                msg_box.setText("Task already exists in the pending tasks list.")
+                msg_box.setWindowTitle("Duplicate Task")
+                msg_box.exec_()
+
+    def eventFilter(self, obj, event):
+        #  The viewport is the area where the items of the list are displayed.
+        if obj is self.completed_tasks_listbox.viewport() and event.type() == event.DragEnter:
+            event.accept()  #  marks the event as processed but allows further handling by subsequent filters or default handlers.
+        elif obj is self.completed_tasks_listbox.viewport() and event.type() == event.Drop:
+            mime_data = event.mimeData()  # contains the data being transferred during the drag-and-drop operation.
+            items = mime_data.text().split('\n')  #  dragged data is formatted as a newline-separated list of items
+            if items:
+                # Only call complete_task() if there are items dropped
+                self.complete_task()  # Call complete_task function only once
+                return True  # Return True to indicate that the event was handled
+        elif obj is self.pending_tasks_listbox.viewport() and event.type() == event.DragEnter:
+            event.accept()
+        elif obj is self.pending_tasks_listbox.viewport() and event.type() == event.Drop:
+            mime_data = event.mimeData()
+            items = mime_data.text().split('\n')
+            if items:
+                selected_tasks_to_clear = self.completed_tasks_listbox.selectedIndexes()
+                selected_tasks_to_clear.sort(reverse=True,
+                                             key=lambda
+                                                 x: x.row())  # Reverse sorting to avoid issues when removing items
+                for index in selected_tasks_to_clear:
+                    selected_task_index = index.row()
+                    cleared_task = self.completed_tasks.pop(selected_task_index)
+                    self.pending_tasks.append(cleared_task)
+                    self.pending_tasks_listbox.addItem(cleared_task)
+
+                self.update_completed_tasks_listbox()
+                self.save_tasks()
+                return True  # Return True to indicate that the event was handled
+
+        return super().eventFilter(obj, event)
+
     def completed_tasks_keypress(self, event):
         modifiers = QApplication.keyboardModifiers()
         if event.key() == Qt.Key_C and modifiers == Qt.ControlModifier:
@@ -376,7 +445,8 @@ class TodoApp(QWidget):
         for index in selected_tasks_indexes:
             selected_task_index = index.row()
             completed_task = self.pending_tasks.pop(selected_task_index)
-            self.completed_tasks.append(completed_task)
+            if completed_task not in self.completed_tasks:
+                self.completed_tasks.append(completed_task)
 
         self.update_pending_tasks_listbox()
         self.update_completed_tasks_listbox()
